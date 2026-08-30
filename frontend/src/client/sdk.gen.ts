@@ -228,6 +228,9 @@ export class UsersService {
      * Read User By Id
      *
      * Get a specific user by id.
+     *
+     * Users may always read their own profile; reading others requires
+     * the READ_ANY_USER permission.
      */
     public static readUserById<ThrowOnError extends boolean = true>(options: Options<usersReadUserByIdData, ThrowOnError>) {
         return (options.client ?? client).get<usersReadUserByIdResponses, usersReadUserByIdErrors, ThrowOnError>({

@@ -1,14 +1,16 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import col, delete, func, select
 
 from app import crud
+from app.api import permissions
 from app.api.deps import (
     CurrentUser,
     SessionDep,
-    get_current_active_superuser,
+    ensure_role,
+    require_roles,
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
@@ -20,6 +22,7 @@ from app.models import (
     UserCreate,
     UserPublic,
     UserRegister,
+    UserRole,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -31,7 +34,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get(
     "/",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_roles(*permissions.LIST_USERS))],
     response_model=UsersPublic,
 )
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
@@ -52,7 +55,9 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
 
 
 @router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
+    "/",
+    dependencies=[Depends(require_roles(*permissions.MANAGE_USERS))],
+    response_model=UserPublic,
 )
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """
@@ -134,7 +139,7 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete own user.
     """
-    if current_user.is_superuser:
+    if current_user.role == UserRole.admin:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
@@ -161,19 +166,18 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 @router.get("/{user_id}", response_model=UserPublic)
 def read_user_by_id(
-    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser, request: Request
 ) -> Any:
     """
     Get a specific user by id.
+
+    Users may always read their own profile; reading others requires
+    the READ_ANY_USER permission.
     """
     user = session.get(User, user_id)
     if user == current_user:
         return user
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=403,
-            detail="The user doesn't have enough privileges",
-        )
+    ensure_role(current_user, permissions.READ_ANY_USER, request.url.path)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -181,7 +185,7 @@ def read_user_by_id(
 
 @router.patch(
     "/{user_id}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(require_roles(*permissions.MANAGE_USERS))],
     response_model=UserPublic,
 )
 def update_user(
@@ -211,7 +215,9 @@ def update_user(
     return db_user
 
 
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete(
+    "/{user_id}", dependencies=[Depends(require_roles(*permissions.MANAGE_USERS))]
+)
 def delete_user(
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:
