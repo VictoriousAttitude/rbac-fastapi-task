@@ -1,5 +1,6 @@
+import logging
 import uuid
-from typing import Any
+from typing import Any, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import col, delete, func, select
@@ -29,7 +30,18 @@ from app.models import (
 )
 from app.utils import generate_new_account_email, send_email
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+def _deny_self_delete(user: User, route: str) -> NoReturn:
+    logger.warning(
+        "Denied self-delete: user=%s role=%s route=%s", user.id, user.role.value, route
+    )
+    raise HTTPException(
+        status_code=403, detail="Admins are not allowed to delete themselves"
+    )
 
 
 @router.get(
@@ -135,14 +147,14 @@ def read_user_me(current_user: CurrentUser) -> Any:
 
 
 @router.delete("/me", response_model=Message)
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+def delete_user_me(
+    session: SessionDep, current_user: CurrentUser, request: Request
+) -> Any:
     """
     Delete own user.
     """
     if current_user.role == UserRole.admin:
-        raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
-        )
+        _deny_self_delete(current_user, request.url.path)
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
@@ -219,7 +231,10 @@ def update_user(
     "/{user_id}", dependencies=[Depends(require_roles(*permissions.MANAGE_USERS))]
 )
 def delete_user(
-    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
+    session: SessionDep,
+    current_user: CurrentUser,
+    user_id: uuid.UUID,
+    request: Request,
 ) -> Message:
     """
     Delete a user.
@@ -228,9 +243,7 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
-        raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
-        )
+        _deny_self_delete(current_user, request.url.path)
     statement = delete(Item).where(col(Item.owner_id) == user_id)
     session.exec(statement)
     session.delete(user)

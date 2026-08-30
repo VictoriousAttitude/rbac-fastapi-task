@@ -63,22 +63,25 @@ def test_read_other_user_role_matrix(
     assert r.status_code == expected_status
 
 
+@pytest.mark.parametrize("method", ["PATCH", "DELETE"])
 @pytest.mark.parametrize(
     ("role", "expected_status"),
     [("admin", 200), ("manager", 403), ("member", 403)],
 )
-def test_update_any_user_role_matrix(
+def test_modify_any_user_role_matrix(
     client: TestClient,
     db: Session,
     request: pytest.FixtureRequest,
+    method: str,
     role: str,
     expected_status: int,
 ) -> None:
     other_user = create_random_user(db)
-    r = client.patch(
+    r = client.request(
+        method,
         f"{settings.API_V1_STR}/users/{other_user.id}",
         headers=headers_for(request, role),
-        json={"full_name": "Updated Name"},
+        json={"full_name": "Updated Name"} if method == "PATCH" else None,
     )
     assert r.status_code == expected_status
 
