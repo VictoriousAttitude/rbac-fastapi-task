@@ -122,6 +122,17 @@ class ItemsPublic(SQLModel):
     count: int
 
 
+class MetricsSummary(SQLModel):
+    total_users: int
+    active_users: int
+    users_by_role: dict[UserRole, int]
+
+
+class GlobalSettings(SQLModel):
+    app_name: str = Field(max_length=255)
+    maintenance_mode: bool
+
+
 # Generic message
 class Message(SQLModel):
     message: str

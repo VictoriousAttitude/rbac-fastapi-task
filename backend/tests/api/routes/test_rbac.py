@@ -83,6 +83,53 @@ def test_update_any_user_role_matrix(
     assert r.status_code == expected_status
 
 
+@pytest.mark.parametrize(
+    ("role", "expected_status"),
+    [("admin", 200), ("manager", 200), ("member", 403)],
+)
+def test_metrics_summary_role_matrix(
+    client: TestClient, request: pytest.FixtureRequest, role: str, expected_status: int
+) -> None:
+    r = client.get(
+        f"{settings.API_V1_STR}/metrics/summary", headers=headers_for(request, role)
+    )
+    assert r.status_code == expected_status
+    if expected_status == 200:
+        summary = r.json()
+        assert summary["total_users"] >= 1
+        assert set(summary["users_by_role"]) == {"admin", "manager", "member"}
+
+
+@pytest.mark.parametrize(
+    ("method", "role", "expected_status"),
+    [
+        ("GET", "admin", 200),
+        ("GET", "manager", 403),
+        ("GET", "member", 403),
+        ("PUT", "admin", 200),
+        ("PUT", "manager", 403),
+        ("PUT", "member", 403),
+    ],
+)
+def test_global_settings_role_matrix(
+    client: TestClient,
+    request: pytest.FixtureRequest,
+    method: str,
+    role: str,
+    expected_status: int,
+) -> None:
+    body = {"app_name": "Renamed App", "maintenance_mode": True}
+    r = client.request(
+        method,
+        f"{settings.API_V1_STR}/settings/",
+        headers=headers_for(request, role),
+        json=body if method == "PUT" else None,
+    )
+    assert r.status_code == expected_status
+    if method == "PUT" and expected_status == 200:
+        assert r.json() == body
+
+
 def test_protected_endpoint_without_token_returns_401(client: TestClient) -> None:
     r = client.get(f"{settings.API_V1_STR}/users/")
     assert r.status_code == 401

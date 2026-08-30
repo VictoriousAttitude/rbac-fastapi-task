@@ -35,6 +35,20 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * GlobalSettings
+ */
+export type GlobalSettings = {
+    /**
+     * App Name
+     */
+    app_name: string;
+    /**
+     * Maintenance Mode
+     */
+    maintenance_mode: boolean;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -120,6 +134,26 @@ export type Message = {
      * Message
      */
     message: string;
+};
+
+/**
+ * MetricsSummary
+ */
+export type MetricsSummary = {
+    /**
+     * Total Users
+     */
+    total_users: number;
+    /**
+     * Active Users
+     */
+    active_users: number;
+    /**
+     * Users By Role
+     */
+    users_by_role: {
+        [key in UserRole]?: number;
+    };
 };
 
 /**
@@ -928,6 +962,63 @@ export type itemsUpdateItemResponses = {
 };
 
 export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+
+export type metricsReadMetricsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/metrics/summary';
+};
+
+export type metricsReadMetricsSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: MetricsSummary;
+};
+
+export type metricsReadMetricsSummaryResponse = metricsReadMetricsSummaryResponses[keyof metricsReadMetricsSummaryResponses];
+
+export type settingsReadGlobalSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings/';
+};
+
+export type settingsReadGlobalSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GlobalSettings;
+};
+
+export type settingsReadGlobalSettingsResponse = settingsReadGlobalSettingsResponses[keyof settingsReadGlobalSettingsResponses];
+
+export type settingsUpdateGlobalSettingsData = {
+    body: GlobalSettings;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings/';
+};
+
+export type settingsUpdateGlobalSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type settingsUpdateGlobalSettingsError = settingsUpdateGlobalSettingsErrors[keyof settingsUpdateGlobalSettingsErrors];
+
+export type settingsUpdateGlobalSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GlobalSettings;
+};
+
+export type settingsUpdateGlobalSettingsResponse = settingsUpdateGlobalSettingsResponses[keyof settingsUpdateGlobalSettingsResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;
