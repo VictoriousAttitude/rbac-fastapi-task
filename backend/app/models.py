@@ -1,3 +1,4 @@
+import enum
 import uuid
 from datetime import UTC, datetime
 
@@ -10,12 +11,20 @@ def get_datetime_utc() -> datetime:
     return datetime.now(UTC)
 
 
+class UserRole(enum.StrEnum):
+    # Lowercase members so SQLAlchemy's name-based enum storage matches the value
+    admin = "admin"
+    manager = "manager"
+    member = "member"
+
+
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    role: UserRole = Field(default=UserRole.member)
 
 
 # Properties to receive via API on creation
@@ -36,6 +45,7 @@ class UserUpdate(SQLModel):
     is_superuser: bool | None = None
     full_name: str | None = Field(default=None, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=128)
+    role: UserRole | None = None
 
 
 class UserUpdateMe(SQLModel):

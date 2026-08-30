@@ -206,6 +206,7 @@ export type UserCreate = {
      * Full Name
      */
     full_name?: string | null;
+    role?: UserRole;
     /**
      * Password
      */
@@ -232,6 +233,7 @@ export type UserPublic = {
      * Full Name
      */
     full_name?: string | null;
+    role?: UserRole;
     /**
      * Id
      */
@@ -261,6 +263,11 @@ export type UserRegister = {
 };
 
 /**
+ * UserRole
+ */
+export type UserRole = 'admin' | 'manager' | 'member';
+
+/**
  * UserUpdate
  */
 export type UserUpdate = {
@@ -284,6 +291,7 @@ export type UserUpdate = {
      * Password
      */
     password?: string | null;
+    role?: UserRole | null;
 };
 
 /**
