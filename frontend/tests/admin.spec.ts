@@ -63,7 +63,9 @@ test.describe("Admin user management", () => {
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
     const userRow = page.getByRole("row").filter({ hasText: email })
-    await expect(userRow.getByText("Superuser")).toBeVisible()
+    // The table shows the role, not the legacy superuser flag (ADR-001);
+    // this form sends no role, so the new user defaults to "member"
+    await expect(userRow.getByText("member", { exact: true })).toBeVisible()
   })
 
   test("Edit a user successfully", async ({ page }) => {

@@ -35,6 +35,20 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * GlobalSettings
+ */
+export type GlobalSettings = {
+    /**
+     * App Name
+     */
+    app_name: string;
+    /**
+     * Maintenance Mode
+     */
+    maintenance_mode: boolean;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -123,6 +137,26 @@ export type Message = {
 };
 
 /**
+ * MetricsSummary
+ */
+export type MetricsSummary = {
+    /**
+     * Total Users
+     */
+    total_users: number;
+    /**
+     * Active Users
+     */
+    active_users: number;
+    /**
+     * Users By Role
+     */
+    users_by_role: {
+        [key in UserRole]?: number;
+    };
+};
+
+/**
  * NewPassword
  */
 export type NewPassword = {
@@ -206,6 +240,7 @@ export type UserCreate = {
      * Full Name
      */
     full_name?: string | null;
+    role?: UserRole;
     /**
      * Password
      */
@@ -232,6 +267,7 @@ export type UserPublic = {
      * Full Name
      */
     full_name?: string | null;
+    role?: UserRole;
     /**
      * Id
      */
@@ -261,6 +297,11 @@ export type UserRegister = {
 };
 
 /**
+ * UserRole
+ */
+export type UserRole = 'admin' | 'manager' | 'member';
+
+/**
  * UserUpdate
  */
 export type UserUpdate = {
@@ -284,6 +325,7 @@ export type UserUpdate = {
      * Password
      */
     password?: string | null;
+    role?: UserRole | null;
 };
 
 /**
@@ -920,6 +962,63 @@ export type itemsUpdateItemResponses = {
 };
 
 export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+
+export type metricsReadMetricsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/metrics/summary';
+};
+
+export type metricsReadMetricsSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: MetricsSummary;
+};
+
+export type metricsReadMetricsSummaryResponse = metricsReadMetricsSummaryResponses[keyof metricsReadMetricsSummaryResponses];
+
+export type settingsReadGlobalSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings/';
+};
+
+export type settingsReadGlobalSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GlobalSettings;
+};
+
+export type settingsReadGlobalSettingsResponse = settingsReadGlobalSettingsResponses[keyof settingsReadGlobalSettingsResponses];
+
+export type settingsUpdateGlobalSettingsData = {
+    body: GlobalSettings;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings/';
+};
+
+export type settingsUpdateGlobalSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type settingsUpdateGlobalSettingsError = settingsUpdateGlobalSettingsErrors[keyof settingsUpdateGlobalSettingsErrors];
+
+export type settingsUpdateGlobalSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GlobalSettings;
+};
+
+export type settingsUpdateGlobalSettingsResponse = settingsUpdateGlobalSettingsResponses[keyof settingsUpdateGlobalSettingsResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

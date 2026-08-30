@@ -55,6 +55,69 @@
 
 ![API docs](img/docs.png)
 
+## Role-Based Access Control (RBAC)
+
+This fork adds three roles — `admin`, `manager`, `member` — enforced on the backend
+and mirrored in the frontend for UX. Design decisions are recorded in
+[docs/adr/001-role-model.md](./docs/adr/001-role-model.md) and
+[docs/adr/002-frontend-capability-propagation.md](./docs/adr/002-frontend-capability-propagation.md);
+deliberate scope cuts in [NOTES.md](./NOTES.md).
+
+### Permission matrix
+
+| Action | admin | manager | member |
+|---|---|---|---|
+| List users (`GET /users/`) | ✓ | ✓ | ✗ |
+| Read any user (`GET /users/{id}`) | ✓ | ✓ | self only |
+| Create user (`POST /users/`) | ✓ | ✗ | ✗ |
+| Update/delete any user | ✓ | ✗ | ✗ |
+| Metrics (`GET /metrics/summary`) | ✓ | ✓ | ✗ |
+| Settings (`GET/PUT /settings/`) | ✓ | ✗ | ✗ |
+| Own profile view/update (`/users/me`) | ✓ | ✓ | ✓ |
+
+Semantics: **401** for missing/invalid credentials, **403** for authenticated but not
+permitted. Every denial is logged with user id and route. Public `POST /users/signup`
+stays open and always assigns `member`.
+
+### How it works
+
+- `role` is a single enum column on `User` and the sole source of truth for
+  authorization (`is_superuser` is kept only for template compatibility).
+- The role→permission mapping lives in one module:
+  [backend/app/api/permissions.py](./backend/app/api/permissions.py).
+- Routes are guarded declaratively with the `require_roles(*roles)` dependency
+  factory in [backend/app/api/deps.py](./backend/app/api/deps.py) — no inline role
+  checks in route bodies.
+
+```mermaid
+flowchart LR
+    A[Request] --> B{Valid JWT?}
+    B -- no --> C[401 Unauthorized]
+    B -- yes --> D[load User]
+    D --> E{"user.role in\nrequire_roles(...)?"}
+    E -- no --> F[log denial\n403 Forbidden]
+    E -- yes --> G[Route handler]
+```
+
+### Seeding roles
+
+- The first superuser (`FIRST_SUPERUSER` / `FIRST_SUPERUSER_PASSWORD` in `.env`) is
+  created with `role=admin` on prestart.
+- New signups get `role=member`.
+- To create a manager, log in as the admin and either use the API
+  (`PATCH /api/v1/users/{id}` with `{"role": "manager"}`) or run:
+  `docker compose exec db psql -U postgres -d app -c "UPDATE \"user\" SET role='manager' WHERE email='...'"`.
+
+### Running the RBAC tests
+
+```bash
+docker compose up -d db mailpit
+cd backend && uv run bash scripts/test.sh
+```
+
+The role×endpoint matrix lives in
+[backend/tests/api/routes/test_rbac.py](./backend/tests/api/routes/test_rbac.py).
+
 ## How to Use It
 
 Click the **Use this template** button at the top of this page to create a new repository.

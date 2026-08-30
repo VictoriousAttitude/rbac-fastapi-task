@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 
 import { type UserPublic, UsersService } from "@/client"
@@ -8,6 +8,7 @@ import { columns, type UserTableData } from "@/components/Admin/columns"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingUsers from "@/components/Pending/PendingUsers"
 import useAuth from "@/hooks/useAuth"
+import { canListUsers, canManageUsers, requireCapability } from "@/lib/roles"
 
 function getUsersQueryOptions() {
   return {
@@ -19,14 +20,7 @@ function getUsersQueryOptions() {
 
 export const Route = createFileRoute("/_layout/admin")({
   component: Admin,
-  beforeLoad: async () => {
-    const { data: user } = await UsersService.readUserMe()
-    if (!user.is_superuser) {
-      throw redirect({
-        to: "/",
-      })
-    }
-  },
+  beforeLoad: () => requireCapability(canListUsers),
   head: () => ({
     meta: [
       {
@@ -45,7 +39,12 @@ function UsersTableContent() {
     isCurrentUser: currentUser?.id === user.id,
   }))
 
-  return <DataTable columns={columns} data={tableData} />
+  // Managers can view the list but not modify users
+  const visibleColumns = canManageUsers(currentUser?.role)
+    ? columns
+    : columns.filter((column) => column.id !== "actions")
+
+  return <DataTable columns={visibleColumns} data={tableData} />
 }
 
 function UsersTable() {
@@ -57,6 +56,8 @@ function UsersTable() {
 }
 
 function Admin() {
+  const { user: currentUser } = useAuth()
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -66,7 +67,7 @@ function Admin() {
             Manage user accounts and permissions
           </p>
         </div>
-        <AddUser />
+        {canManageUsers(currentUser?.role) && <AddUser />}
       </div>
       <UsersTable />
     </div>
